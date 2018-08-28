@@ -19,6 +19,7 @@ package com.example.android.todolist;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -66,10 +67,24 @@ public class AddTaskActivity extends AppCompatActivity {
         }
 
         Intent intent = getIntent();
+
+        // from MainActivity, you come here
         if (intent != null && intent.hasExtra(EXTRA_TASK_ID)) {
             mButton.setText(R.string.update_button);
             if (mTaskId == DEFAULT_TASK_ID) {
+
+                // extracting data
+                mTaskId = intent.getIntExtra(EXTRA_TASK_ID, DEFAULT_TASK_ID);
+
                 // populate the UI
+                AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        TaskEntry task = appDatabase1.taskDao().loadTaskById(mTaskId);
+                        populateUI(task);
+                    }
+                });
+
             }
         }
     }
@@ -103,6 +118,13 @@ public class AddTaskActivity extends AppCompatActivity {
      */
     private void populateUI(TaskEntry task) {
 
+        if (task == null) {
+            return; // exit
+        }
+
+        mEditText.setText(task.getDescription());
+        setPriorityInViews(task.getPriority());
+
     }
 
     /**
@@ -117,11 +139,24 @@ public class AddTaskActivity extends AppCompatActivity {
         final TaskEntry taskEntry1 = new TaskEntry(description, priority, date);
 
         // AppExecutors.java
+        // can't write to database in Main/UI execution road
         AppExecutors.getInstance().diskIO().execute(new Runnable() {
             @Override
             public void run() {
-                // can't write to database in Main/UI execution road
-                appDatabase1.taskDao().insertTask(taskEntry1);
+
+                if (mTaskId == DEFAULT_TASK_ID) {
+                    // if new task, INSERT
+                    appDatabase1.taskDao().insertTask(taskEntry1);
+                    finish();
+                } else {
+                    // same task, UPDATE
+//                    Log.d(TAG, String.valueOf( taskEntry1.getId()));
+                    taskEntry1.setId(mTaskId); // << why do we have to set ID???
+//                    Log.d(TAG, String.valueOf( taskEntry1.getId()));
+                    appDatabase1.taskDao().updateTask(taskEntry1);
+                    finish();
+                }
+
             }
         });
 
