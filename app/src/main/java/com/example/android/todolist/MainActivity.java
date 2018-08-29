@@ -16,14 +16,18 @@
 
 package com.example.android.todolist;
 
+import android.arch.lifecycle.LiveData;
+import android.arch.lifecycle.Observer;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
+import android.util.Log;
 import android.view.View;
 
 import com.example.android.todolist.database.AppDatabase;
@@ -99,7 +103,7 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.ItemC
                 });
 
                 // need to refresh the UI after you delete the task
-                getTasksFromDatabase();
+//                getTasksFromDatabase();
 
             }
         }).attachToRecyclerView(mRecyclerView);
@@ -124,7 +128,8 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.ItemC
         // get a database donut
         appDatabase1 = AppDatabase.getInstance( getApplicationContext() );
 
-
+        // getting/retrieving stuff from database when the activity is first created
+        getTasksFromDatabase();
     } // onCreate()
 
 
@@ -137,27 +142,25 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.ItemC
         // qry the database
 
         // Asynchronusly get task from Database and update the UI
-        getTasksFromDatabase();
+//        getTasksFromDatabase(); << no longer needed because of Livedata
 
     }
 
     private void getTasksFromDatabase() {
-        AppExecutors.getInstance().diskIO().execute(new Runnable() {
+
+        // do not need AppExecutor
+
+        Log.d(TAG, "Actively retrieving the task from the database");
+        final LiveData< List<TaskEntry> >  results = appDatabase1.taskDao().loadAllTasks();
+
+        results.observe(MainActivity.this, new Observer< List<TaskEntry> >() {
             @Override
-            public void run() {
-                final List<TaskEntry> results = appDatabase1.taskDao().loadAllTasks();
-
-                // this will be replace with Android Archi
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mAdapter.setTasks(results);
-                    }
-                });
-
-
+            public void onChanged(@Nullable List<TaskEntry> taskEntries) {
+                Log.d(TAG, "Receiving data from Livedata");
+                mAdapter.setTasks(taskEntries);
             }
         });
+
     }
 
 

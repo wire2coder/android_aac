@@ -1,5 +1,6 @@
 package com.example.android.todolist.database;
 
+import android.arch.lifecycle.LiveData;
 import android.arch.persistence.room.Dao;
 import android.arch.persistence.room.Delete;
 import android.arch.persistence.room.Insert;
@@ -13,7 +14,8 @@ import java.util.List;
 public interface TaskDao {
 
     @Query("SELECT * FROM task ORDER BY priority")
-    List<TaskEntry> loadAllTasks();
+//    List<TaskEntry> loadAllTasks();
+    LiveData< List<TaskEntry> >  loadAllTasks();
 
     @Insert
     void insertTask(TaskEntry taskEntry);
