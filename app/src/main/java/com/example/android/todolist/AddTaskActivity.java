@@ -16,8 +16,11 @@
 
 package com.example.android.todolist;
 
+import android.arch.lifecycle.LiveData;
+import android.arch.lifecycle.Observer;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -76,12 +79,18 @@ public class AddTaskActivity extends AppCompatActivity {
                 // extracting data
                 mTaskId = intent.getIntExtra(EXTRA_TASK_ID, DEFAULT_TASK_ID);
 
-                // populate the UI
-                AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                // Livedata runs defaultly on MainActivity, remove AppExecutors
+                final LiveData<TaskEntry> task = appDatabase1.taskDao().loadTaskById(mTaskId);
+
+                task.observe(AddTaskActivity.this, new Observer<TaskEntry>() {
                     @Override
-                    public void run() {
-                        TaskEntry task = appDatabase1.taskDao().loadTaskById(mTaskId);
-                        populateUI(task);
+                    // when the database changed, populate the UI
+                    public void onChanged(@Nullable TaskEntry taskEntry) {
+                        // TODO: i don't unstand the line below, come back to it later
+                        task.removeObserver(this);
+                        Log.d(TAG, "Get data from database");
+                        Log.d(TAG, String.valueOf("ttt>>> " +this));
+                        populateUI(taskEntry);
                     }
                 });
 
