@@ -16,8 +16,8 @@
 
 package com.example.android.todolist;
 
-import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.Observer;
+import android.arch.lifecycle.ViewModelProviders;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -129,9 +129,24 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.ItemC
         appDatabase1 = AppDatabase.getInstance( getApplicationContext() );
 
         // getting/retrieving stuff from database when the activity is first created
-        getTasksFromDatabase();
+        setupViewModel();
     } // onCreate()
 
+
+    // COMPLETED (8) This method is not retrieving the tasks any more. Refactor to a more suitable name such as setupViewModel
+    private void setupViewModel() {
+        // COMPLETED (5) Remove the logging and the call to loadAllTasks, this is done in the ViewModel now
+        // COMPLETED (6) Declare a ViewModel variable and initialize it by calling ViewModelProviders.of
+        MainViewModel viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
+        // COMPLETED (7) Observe the LiveData object in the ViewModel
+        viewModel.getTasks().observe(this, new Observer<List<TaskEntry>>() {
+            @Override
+            public void onChanged(@Nullable List<TaskEntry> taskEntries) {
+                Log.d(TAG, "Updating list of tasks from LiveData in ViewModel");
+                mAdapter.setTasks(taskEntries);
+            }
+        });
+    }
 
     @Override
     protected void onResume() {
@@ -145,24 +160,6 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.ItemC
 //        getTasksFromDatabase(); << no longer needed because of Livedata
 
     }
-
-    private void getTasksFromDatabase() {
-
-        // do not need AppExecutor
-
-        Log.d(TAG, "Actively retrieving the task from the database");
-        final LiveData< List<TaskEntry> >  results = appDatabase1.taskDao().loadAllTasks();
-
-        results.observe(MainActivity.this, new Observer< List<TaskEntry> >() {
-            @Override
-            public void onChanged(@Nullable List<TaskEntry> taskEntries) {
-                Log.d(TAG, "Receiving data from Livedata");
-                mAdapter.setTasks(taskEntries);
-            }
-        });
-
-    }
-
 
     @Override
     public void onItemClickListener(int itemId) {
